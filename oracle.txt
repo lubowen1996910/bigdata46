@@ -1,0 +1,566 @@
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+潇洒：使用基本循环，x初始值为20，循环累加10，当x=200时退出
+
+declare
+	v_x number(4):=20;	
+begin
+	loop	
+	exit when  v_x=200;	
+	v_x:=v_x+10;
+	dbms_output.put_line(v_x) ;
+	end loop;
+end;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+潇洒：while循环，初始值5，循环累加2，当值大于20退出循环 
+declare
+    v_s number(5) :=5;
+begin
+ while v_s<=20 loop
+        dbms_output.put_line(v_s);
+        v_s := v_s+2;
+    end loop;
+end;
+  
+~ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+潇洒：for循环
+
+begin
+    for v_num in reverse 1..10 loop
+        dbms_output.put_line(v_num);            
+    end loop;
+end;
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+潇洒：用GOTO语句。当员工薪水小于3000时转到update标签处提高员工薪水500，否则转至quit，不做任何动作。
+declare
+　   v_sal emp.sal%type;
+begin
+    select v_sal into sal from emp where empno=&no;
+　    if sal<3000 then
+       goto updat;
+       else
+       goto quit;
+       end if;
+　   <<updat>>
+　   update emp set sal=sal+100 where empno=&no;
+      <<quit>>
+      null;
+end;
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+潇洒：使用隐式游标的属性，判断对雇员工资的修改是否成功
+begin
+	update emp set sal=sal+100 where empno=&no;
+	if SQL%FOUND then
+	    dbms_output.put_line('修改成功');
+	    commit;
+	else
+	     dbms_putout.put_line('修改失败');
+	end if;
+end;
+
+begin
+ update emp set comm=comm+500 where empno=&no;
+ if SQL%FOUND then
+  dbms_output.put_line('成功修改雇员奖金！');
+  commit;
+ else
+  dbms_output.put_line('修改雇员奖金失败！');
+ end if;
+end;
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+潇洒：用游标提取emp表中7788雇员的名称和职务。
+
+declare
+	v_ename varchar2(10);
+	v_job varchar2(10);
+	cursor emp_cursor is
+	select ename,job from emp where empno=7499;
+begin
+	open emp_cursor;
+	fetch emp_cursor into v_ename,v_job;
+	dbms_output.put_line(v_ename||','||v_job);
+	close emp_cursor;
+end;
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+例：创建一个过程，以雇员号为参数查询雇员的姓名和职位。
+
+
+create or replace procedure pro_nameandjob(v_empno emp.empno%type)
+is
+v_ename emp.ename%type;
+v_job emp.job%type;
+begin
+select ename,job into v_ename,v_job from emp where empno=v_empno;
+dbms_output.put_line(v_ename||'   '||v_job);
+end;
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+例：创建一个过程，以雇员号查询雇员的薪水。
+create or replace procedure findempsal(v_empno emp.empno%type,v_sal out emp.sal%type)
+is
+begin
+	select sal into v_sal from emp where empno=v_empno;
+	dbms_output.put_line(v_sal);
+end;
+
+
+var sal number;
+exec findempsal(7369,:sal);
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+例：创建两个数进行交换的过程。
+create or replace procedure no(p1 in out number,p2 in out number)
+is
+	temp number; //定义第三者用来两两置换
+begin
+	temp:=p1;
+	p1:=p2;             //置换
+	p2:=temp;
+end;
+
+declare
+	n1 number:=100;   //赋值
+	n2 number:=200;
+begin
+	no(n1,n2);
+	dbms_output.put_line(n1);
+	dbms_output.put_line(n2);
+end;
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+例：创建一个函数，以雇员号查询雇员的姓名。	
+create or replace function getname(v_empno varchar2)
+return varchar2
+is
+	v_name varchar2(20);
+begin
+	select ename into 	v_name from emp where empno=v_empno;
+		return v_name;
+end;
+	
+	
+	
+	
+declare
+	v_name varchar2(20);
+begin
+	v_name:=getname(7369);
+    dbms_output.put_line(v_name);
+end;
+
+在SQL语句中调用getname，显示雇员号为 7499 的雇员姓名。
+select getname (7499) from dual;
+从雇员表中查找雇员号为7934的雇员信息。 
+Select * from emp where ename=getname(7934);
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1、创建存储过程，根据员工编号删除scott.emp
+	表中的相关记录。
+	（提示：由调用语句提供的员工编号
+	来删除记录，要求员工编号可随机输入。）
+	create or replace procedure delete_emp(v_empno emp.empno%type)
+	is
+	begin
+	delete from emp where empno=v_empno;
+	end;
+	
+	执行语句：
+	execute delete_emp('7844');
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	
+2、创建存储过程：输入部门编号，
+	输出scott.emp表中该部门所有职工的员工编号、
+	姓名、工作岗位。
+	(提示：查询结果是多行，需使用游标，
+	需把游标的定义像变量那样在过程或函数
+	里定义，
+	所以游标的定义要放在如下位置。	
+    create or replace procedure pro_emp(v_deptno emp.deptno%type) is
+	cursor cur_emp is	     //游标语句：cursor 游标名 is select语句
+	select empno,ename,job from emp where deptno=v_deptno;
+	begin
+	for re_emp in cur_emp loop   //遍历语句： for  遍历名 in  遍历物 loop
+	dbms_output.put_line('编号：'||re_emp.empno||',名字：'||re_emp.ename||',职位:'||re_emp.job);
+	end loop;  //停止遍历
+	end;
+	
+	执行语句：
+	execute pro_emp(20);
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
+3、编写一个过程，指定一个员工编号与一个工资增加的百分比，
+	使emp表中将该员工的工资（sal）增加输入的百分比。	
+	create or replace procedure up_sal(v_empno emp.empno%type, v_sal emp.sal%type) is
+	begin
+	update emp set sal = sal + sal*v_sal where empno =v_empno;
+	end up_sal;
+	
+	执行语句：
+	exec up_sal(7900,0.2);
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4、员工工资表如下：
+	表名        字段        类型        说明
+	EMP_SALARY        EMP_ID        varchr2(32)        员工ID
+	EMP_SALARY        EMP_NAME        varchr2(32)        员工姓名
+	EMP_SALARY        SAL        number        工资
+	创建一个存储过程，对程序员的工资进行分析，
+	月薪1500到10000不等，如果有百分之五十的
+	人薪水不到4000元，给所有人加薪，
+	每次加1，再进行分析，直到有一半以
+	上的人大于4000元为止，存储过程执行
+	完后，输出最终加了多少钱？
+	
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
+【例1】 在students表上建立触发器。在向表students插入记录时触发，
+		目的是利用序列为其主键产生值。
+	create sequence students_seq;
+	create or replace trigger students_trigger before insert
+		on students
+		for each row
+	begin
+		select students_seq.nextval into :new.sid from dual;
+	end;
+	
+	验证：
+	insert into students(sname,sage,ssex)values('hahaha',22,'男');
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+【例2】限制更改的年龄不能小于原来的年龄
+		create or replace trigger updateStudents before update
+			on students
+			for each row
+		begin
+			if :new.sage<:old.sage then
+				raise_application_error(-20002,'年龄有误!');
+			end if;
+		end;
+		
+		验证：
+		update  students set sage='11' where sid=1004;
+		
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+【例3】限制姓名下的人数量不能超过5位。
+		create or replace trigger emp_people before insert
+			on emp
+			for each row
+		declare  
+			num number;  
+		begin
+			select count(*) into num from emp where deptno=:new.deptno;
+			if(num>5) then  
+				raise_application_error(-20002,'人数不能多与五个');
+			end if;
+		end;
+		
+		验证：
+		insert into emp (EMPNO,ENAME,SAL,DEPTNO) values (7534,'luwen',2300.00,20);
+		
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
+	1 .创建 before insert 触发器	
+			create or replace trigger ti_insert before insert
+				on students
+				for each row
+			begin 
+			   :new.SNAME :='大笑'||:new.SNAME; 
+			  dbms_output.put_line('哈哈哈哈哈');
+			end;
+		
+		验证：
+		update students set SNAME='小红' where SID=1002;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2. 创建 after update 触发器(AFLTER触发器中的:NEW值不可更改)
+    create or replace trigger tg_update after update 
+		on students
+		for each row
+			when(old.SSEX='男')
+		begin
+			dbms_output.put_line('This is update');
+			dbms_output.put_line(:new.SID)
+			dbms_output.put_line(:new.SNAME);
+			dbms_output.put_line(:old.SID);
+			dbms_output.put_line(:old.SNAME);
+		end;
+		
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1．编写程序包，此程序包有两个过程和一个函数，第一个过程根据职员编号打印职员姓名，
+第二个过程根据职员编号打印职员的部门编号。函数根据职员编号返回职员的薪水。
+包头：
+	create or replace package emp_copy_package
+		as
+			procedure empnoFindSname(v_empno emp_copy.empno%type);
+			procedure empnoFindDeptno(v_empno emp_copy.empno%type);
+			function empnoFindSal(v_empno emp_copy.empno%type) return number;
+		end;
+	
+包体：
+create or replace package body emp_copy_package
+	is
+		procedure empnoFindSname(v_empno emp_copy.empno%type) is
+		v_ename emp_copy.ename%type;
+	begin
+		select ename into v_ename from emp_copy where empno=v_empno;
+		dbms_output.put_line('姓名:'||v_ename);
+	end;	
+		procedure empnoFindDeptno(v_empno emp_copy.empno%type) is
+		v_deptno emp_copy.deptno%type;
+	begin
+		select deptno into v_deptno from emp_copy where empno=v_empno;
+		dbms_output.put_line('部门编号:'||v_deptno);
+	end;
+	function empnoFindSal(v_empno emp_copy.empno%type) return number is
+		v_sal number;
+	begin
+		select sal into v_sal from emp_copy where empno=v_empno;
+		return v_sal;
+	end;
+end;
+
+执行语句：
+execute emp_copy_package.empnoFindSname(7369); //execute 包名.过程名
+execute emp_copy_package.empnoFindDeptno(7369);
+函数调用：
+declare
+ v_sal number;
+begin
+ v_sal:=emp_copy_package. empnoFindSal(7369);
+ dbms_output.put_line(v_sal);
+end;
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2．编写一个过程，将10号部门员工薪水上涨10%，20号部门员工薪水上涨20%，
+其他部门员工薪水保持不变。
+create or replace procedure add_sal(v_deptno number)
+is
+begin
+	if v_deptno=10 then
+		update emp_copy set sal=sal*1.1;
+	elsif v_deptno=20 then
+		update emp_copy set sal=sal*1.2;
+	else
+		dbms_output.put_line('行了');
+	end if;
+end;
+
+执行语句：
+execute add_sal(10);
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3．编写一个过程，要求根据用户输入的员工号(emp_no)查询EMP表，
+返回员工的姓名和工作职位(empName和Job)。并编写一个匿名块调用此过程。
+create or replace procedure pro_emp(emp_no emp_copy.empno%type)
+is
+	empname emp_copy.ename%type; 
+	job emp_copy.job%type;
+begin
+	select ename,job into empname,job from emp_copy where empno=emp_no;
+	dbms_output.put_line('姓名:'||empname||'职位,'||job);
+end;
+
+执行语句：
+begin
+pro_emp(7369);
+end;
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+4．编写一个程序包，此程序包有一个过程和一个函数。
+过程利用传入参数传入员工的工作职位(emp表JOB字段)，显示该职位中的员工数量。
+函数利用传入参数传入员工的工作职位，返回该职位中的员工数量。编写调用程序执行。
+包头：
+create or replace package emp_package 
+is
+ procedure jobFindPeople(v_job emp_copy.job%type);
+ function jobFindPeople01(v_job emp_copy.job%type) return number;
+end;
+
+包体：
+create or replace package body emp_package 
+is
+	procedure jobFindPeople(v_job emp_copy.job%type) is 
+	v_people number(20);
+begin
+	select count(*) into v_people from emp_copy where job=v_job; 
+	dbms_output.put_line(v_people);
+end;
+	function jobFindPeople01(v_job emp_copy.job%type)  return number is
+	v_people01 number(20);
+begin
+	select count(*) into v_people01 from emp_copy where job=v_job; 
+	return v_people01;
+	end;
+end;
+	
+执行语句：
+execute emp_package.jobFindPeople('CLERK');
+
+函数调用：
+declare
+	v_people01 number(20);
+begin
+	v_people01:=emp_package.jobFindPeople01('CLERK');
+	dbms_output.put_line(v_people01);
+end;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Student(Sid,Sname,Sage,Ssex) 学生表
+Course(Cid,Cname,Tid) 课程表
+SC(Sid,Cid,score) 成绩表
+Teacher(Tid,Tname) 教师表 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1.查询“1”课程比“2”课程成绩高的所有学生的学号；
+1课程的成绩：
+select S_id,score from t_SCS where C_id='1';
+2课程的成绩：
+select S_id,score from t_SCS where C_id='2';
+select a.S_id from (select S_id,score from t_SCS where C_id='1') a join (select S_id,score from t_SCS    where C_id='2') b on a.S_id = b.S_id where a.score > b.score;
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+2.查询平均成绩大于80分的同学的学号和平均成绩；
+select S_id,avg(score) from t_SCS group by S_id having avg(score)>80;
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+3. 查询所有同学的学号、姓名、选课数、总成绩 
+select t_Stu.S_id,t_Stu.S_name,count(C_id),sum(score) from t_Students t_Stu join t_SCS S on t_Stu.S_id = S.S_id;
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+4.查询姓“孙”的老师的个数； 
+select count(T_id) from Teachers where T_name like '孙%';
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+5.查询没学过“赵倩”老师课的同学的学号、姓名；
+查询赵倩老师
+select T_id from Teachers where T_name='赵倩';
+赵倩老师所带的课程编号:
+select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩');
+选过赵倩老师课程的学生编号(重要):
+select distinct S_id from t_SCS where C_id in (select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩'));
+没有选过赵倩老师课程的学生:
+select S_id,S_name from t_StudentS where S_id not in (select distinct S_id from t_CourseS where C_id in (select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩')));
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+6.查询学过“1”并且也学过编号“2”课程的同学的学号、姓名；
+学过1课程的学生：
+select S_id from t_SCS where C_id=1;
+学过2课程的学生：
+select S_id from t_SCS where C_id=2;
+学过“1”并且也学过编号“2”课程的同学的学号、姓名:
+select S_id,S_name from t_StudentS where S_id in ((select S_id from t_SCS where C_id =1) intersect (select S_id from t_SCS where C_id =2));
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+7.查询学过“赵倩”老师所教的所有课的同学的学号、姓名；
+select distinct S_id from t_SCS where C_id in (select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩'));
+查询赵倩老师
+select T_id from Teachers where T_name='赵倩';
+赵倩老师所带的课程编号:
+select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩');
+选过赵倩老师课程的学生-----(重要)
+select S_id,C_id from t_SCS where C_id in (select C_id from t_CourseS where T_id = (select T_id from Teachers where T_name='赵倩'));
+查询学过“赵倩”老师所教的所有课的同学的学号
+select S_id from (select count(C_id) num from t_SCS where C_id in (select C_id from t_CourseS where T_id = 
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+8.查询所有课程成绩小于60分的同学的学号、姓名； 
+选出学生的姓名
+select distinct S_id from t_SCS;
+选出课程成绩>=60的学号,姓名(重要)
+select distinct S_id from t_SCS where score>=60;
+选出课程成绩<60的姓名,学号
+select distinct S_id ,S_name from t_StudentS where S_id not in (select distinct S_id from t_SCS where score>=60);
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+9.查询没有学全所有课的同学的学号、姓名；
+所有课程数
+select count(C_id) from t_CourseS;                    
+select S_id,count(C_id) from t_SCS group by S_id having count(C_id)<(select count(C_id) from t_CourseS);
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+10.查询至少有一门课与学号为“1001”的同学所学相同的同学的学号和姓名；
+学号为“1001”的同学所学课程
+select C_id from t_SCS where S_id = '1001';
+select distinct S_id from t_SCS where C_id in (select C_id from t_SCS where S_id = '1001');
+  
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+ 11.删除学习“赵倩”老师课的SC表记录；
+delete from t_SCS where C_id (select C_id from t_CourseS where C_id = (select C_id from teacher where tname='赵倩'));
+ 
+ 
+ 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+ 
+12.查询各科成绩最高和最低的分：以如下形式显示：课程ID，最高分，最低分
+select C_id,max(score),min(score) from t_SCS group by C_id ;
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
